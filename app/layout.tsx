@@ -2,6 +2,16 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
@@ -16,7 +26,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <div className="w-full h-screen justify-center flex items-center bg-zinc-50  ">
+          <Card className='p-10 h-[80%] w-[80%] md:w-[60%] lg:w-[50%]'>
+              {children}
+          </Card>
+        </div>
+      </body>
     </html>
   )
 }
