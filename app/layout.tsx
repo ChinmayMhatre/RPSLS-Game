@@ -4,12 +4,8 @@ import './globals.css'
 
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
+import { Toaster } from "@/components/ui/sonner"
 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -29,9 +25,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="w-full h-screen justify-center flex items-center bg-zinc-50  ">
           <Card className='p-10 h-[80%] w-[80%] md:w-[60%] lg:w-[50%]'>
-              {children}
+              {children}          
           </Card>
         </div>
+        <Toaster position='top-center' expand />
       </body>
     </html>
   )
