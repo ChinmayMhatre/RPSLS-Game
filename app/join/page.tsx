@@ -6,14 +6,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { zodResolver } from '@hookform/resolvers/zod'
 import React from 'react'
 import { useForm } from 'react-hook-form'
+import Web3 from 'web3'
 import z from 'zod'
+import RPSLS from '../../contracts/RPS.json'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 const joinGameSchema = z.object({
   contractAddress: z.string().min(42).max(42),
-  move: z.enum(['rock', 'paper', 'scissors', 'lizard', 'spock']),
+  move: z.enum(['null','rock', 'paper', 'scissors', 'lizard', 'spock']),
 })
 
 const Page = () => {
+  const router = useRouter()
 
   const form = useForm<z.infer<typeof joinGameSchema>>({
     resolver: zodResolver(joinGameSchema),
@@ -23,8 +28,40 @@ const Page = () => {
     },
   })
 
-  const onSubmit = (values: z.infer<typeof joinGameSchema>) => {
-    console.log(values)
+  const joinGame = async () => {
+
+  }
+
+  const onSubmit = async (values: z.infer<typeof joinGameSchema>) => {
+    const web3 = new Web3((window as any)?.ethereum);
+    try {
+      const accounts = await web3.eth.getAccounts();
+      const code = await web3.eth.getCode(values.contractAddress);
+      if (code == '0x') {
+        toast.error('Contract does not exist')
+        return;
+      }
+      const contract = new web3.eth.Contract(RPSLS.abi, values.contractAddress);
+      const c2 = await contract.methods.c2().call();
+      const j2:any = await contract.methods.j2().call();
+      if (j2 != accounts[0]){
+        toast.error('You do not have access to this game!')
+        return
+      }
+      console.log(Number(c2));
+      if (Number(c2) != 0 ){
+        toast.error('Move already played',{
+          onAutoClose: () => {
+            router.push('/'+ values.contractAddress)
+          }
+        })
+      }else{
+        
+      }
+
+    } catch (error) {
+      toast.error('Something went wrong')
+    }
   }
 
   return (

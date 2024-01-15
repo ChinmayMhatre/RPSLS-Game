@@ -9,16 +9,48 @@ import RPSLS from '../../contracts/RPS.json'
 import { toast } from 'sonner';
 import { getGameState } from '../utils/utils';
 import { Button } from '@/components/ui/button';
+import { set } from 'zod';
 
 const Page = ({ params }: { params: { id: string } }) => {
   const [provider, setProvider] = useState<any>(null);
   const [gameContract, setGameContract] = useState<any>(null)
+  const [allowUserTimeout, setAllowUserTimeout] = useState<any>(false)
+  const timeout = 300000
 
   const [salt, setSalt] = useState<any>(null)
   const [move, setMove] = useState<any>(null)
-  
-  const [player2Played, setPlayer2Played] = useState(true)
+
+  const [player2Played, setPlayer2Played] = useState(false)
   const router = useRouter()
+
+
+  const checkPlayer2Move = async (contract: any) => {
+    const web3 = new Web3((window as any)?.ethereum);
+    // const isOver = BigInt(Date.now()) > BigInt(parseInt(lastAction) + 60000)
+    const interval = setInterval(async () => {
+      try {  
+        const [lastAction, player2Move] = await Promise.all([
+          contract.methods.lastAction().call(),
+          contract.methods.c2().call()
+        ]);
+        if (Number(player2Move) !== 0) {
+          console.log('player 2 has played');
+          setPlayer2Played(true)
+          clearInterval(interval);
+        } 
+        else if (BigInt(Date.now()) > BigInt(parseInt(lastAction) + timeout)) {
+          console.log('timeout');
+          setAllowUserTimeout(true)
+          clearInterval(interval);
+        }
+        
+      } catch (error) {
+        toast.message((error as Error).message)
+      }
+    }, 5000)
+
+
+  }
 
   const checkIfContract = async (address: string) => {
     const detectedProvider = await detectEthereumProvider();
@@ -35,6 +67,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     const web3 = new Web3((window as any)?.ethereum);
     try {
       const code = await web3.eth.getCode(address);
+
       if (code === '0x') {
         toast.message('This is not a valid contract address', {
           description: 'redirecting you to home page',
@@ -46,8 +79,8 @@ const Page = ({ params }: { params: { id: string } }) => {
         const contract = new web3.eth.Contract(RPSLS.abi, address);
         checkUser(contract)
         checkGameData(contract)
-        checkPlayer2Move(contract)
         // checkStatus(contract)
+        checkPlayer2Move(contract)
         setGameContract(contract)
       }
     } catch (error) {
@@ -67,18 +100,15 @@ const Page = ({ params }: { params: { id: string } }) => {
     checkIfContract(params.id)
   }, [])
 
-  const CheckPlayer2Move = async (contract: any) => {
-    
-  }
+
 
   const checkUser = async (contract: any) => {
 
     try {
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
-      console.log(contract);
       const owner = await contract.methods.j1().call();
-      if (accounts[2] === owner) {
+      if (accounts[0] === owner) {
         return
       } else {
         toast.message('You do not have access to the game', {
@@ -146,26 +176,26 @@ const Page = ({ params }: { params: { id: string } }) => {
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
       console.log(accounts);
-      
+
       await gameContract.methods.solve(move, salt).send({ from: accounts[0] })
 
       const player2Move = await gameContract.methods.j2().call()
 
-      if(move === player2Move){
+      if (move === player2Move) {
         toast.message('Have Ended in a tie', {
           onAutoClose(toast) {
             router.push('/')
           },
         })
       }
-      const winner = await gameContract.methods.win(move,player2Move).call()
-      if(winner){
+      const winner = await gameContract.methods.win(move, player2Move).call()
+      if (winner) {
         toast.message('Congratulations! You have won', {
           onAutoClose(toast) {
             router.push('/')
           },
         })
-      }else{
+      } else {
         toast.message(':((( You have lost, try again!', {
           onAutoClose(toast) {
             router.push('/')
@@ -173,7 +203,7 @@ const Page = ({ params }: { params: { id: string } }) => {
         })
       }
 
-    } catch (error:any) {
+    } catch (error: any) {
       toast.message(error.message)
     }
   }
@@ -192,6 +222,13 @@ const Page = ({ params }: { params: { id: string } }) => {
     <div>
       {/* {provider?noOwner():noProvider()} */}
       {loading()}
+      {
+        allowUserTimeout ? (
+          <Button>
+            Recover your funds
+          </Button>
+        ) : null
+      }
       {
         player2Played ? (
           <>
