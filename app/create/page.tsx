@@ -10,24 +10,26 @@ import z from 'zod'
 import { moveMap, resetGame, saveGame } from '../utils/utils'
 import detectEthereumProvider from '@metamask/detect-provider'
 import { MetaMaskEthereumProvider } from '@metamask/providers';
+import {useRouter} from 'next/navigation'
 import { toast } from 'sonner'
 import Web3 from 'web3'
 import Hasher from '../../contracts/Hasher.json'
 import RPSLSContract from '../../contracts/RPS.json'
 
 const createGameSchema = z.object({
-  stake: z.number(),
+  stake: z.string(),
   player2Address: z.string(),
   move: z.enum(['rock', 'paper', 'scissors', 'lizard', 'spock']),
 })
 
 const Page = () => {
+  const router = useRouter()
   const [salt, setSalt] = useState('')
 
   const form = useForm<z.infer<typeof createGameSchema>>({
     resolver: zodResolver(createGameSchema),
     defaultValues: {
-      stake: 0,
+      stake: '0',
       player2Address: '',
       move: 'rock',
     },
@@ -67,41 +69,63 @@ const Page = () => {
             //   }).send({
             //     from: accounts[2],
             //   });
-            // const hasherContractAddress = hashInstance.options.address;
+            const hasherContractAddress = '0x8013F929F90B929ACB0E30fcE200af4Bc17F9634';
 
-            const generateSaltUint256 = (): string => {
-              const randomValues = new Uint32Array(8);
-              window.crypto.getRandomValues(randomValues);
-              const saltUint256 = randomValues.reduce((acc, value) => acc + value.toString(16).padStart(8, '0'), '');
-              return `0x${saltUint256}`;
-            };
+            // const generateSaltUint256 = (): string => {
+            //   const randomValues = new Uint32Array(8);
+            //   window.crypto.getRandomValues(randomValues);
+            //   const saltUint256 = randomValues.reduce((acc, value) => acc + value.toString(16).padStart(8, '0'), '');
+            //   return BigInt(`0x${saltUint256}`).toString();
+            // };
+
+            const generateSaltUint256 = ()=>{
+              const byteCount = 32; // 256 bits
+              const randomBytes = new Uint8Array(byteCount);
+              window.crypto.getRandomValues(randomBytes);
+          
+              // Convert the byte array to a big integer string
+              let salt = '';
+              for (let i = 0; i < randomBytes.length; i++) {
+                  salt += ('00' + randomBytes[i].toString(16)).slice(-2);
+              }
+              /* global BigInt */
+              return BigInt(`0x${salt}`).toString();
+          }            
 
             const generatedSalt = generateSaltUint256();
-            setSalt(salt.toString())
-            console.log(salt);
+            setSalt(generatedSalt)
+            console.log(generatedSalt);
             
-            // const hasherContract = new web3.eth.Contract(Hasher.abi, hasherContractAddress);
+            const hasherContract:any = new web3.eth.Contract(Hasher.abi, hasherContractAddress);
           
-            // const generateMoveHash = async (move: number, salt: number) => {
-            //     return await hasherContract.methods.hash(move, salt).call();
-            // }
+            const generateMoveHash = async (move: number, salt: number) => {
+                return await hasherContract.methods.hash(move, salt).call();
+            }
           
-            // const hashedMove = generateMoveHash(moveValue, generatedSalt); 
-          //   const RPSLS = new web3.eth.Contract(RPSLSContract.abi);
-          //   const rpslsInstance = await RPSLS.deploy({
-          //     data: RPSLSContract.bytecode,
-          //     arguments: [hashedMove, values.player2Address]
-          // })
-          //     .send({ from: accounts[0], value: web3.utils.toWei(values.stake, 'ether') });
-              // saveGame(generatedSalt,values.move,rpslsInstance.options.address)
-              // router.push(`/${rpslsInstance.options.address}`)
+            const hashedMove:any = await generateMoveHash(moveValue, generatedSalt); 
+            console.log("hash",hashedMove);
+            
+            const RPSLS:any = new web3.eth.Contract(RPSLSContract.abi);
+            const rpslsInstance = await RPSLS.deploy({
+              data: RPSLSContract.bytecode,
+              arguments: [hashedMove, values.player2Address]
+          })
+              .send({ from: accounts[0], value: web3.utils.toWei(values.stake, 'ether') , gas: 1000000});
+              saveGame(generatedSalt,values.move,rpslsInstance.options.address)
+              toast.success(`Game created successfully at ${rpslsInstance.options.address} ` , {
+                description: 'redirecting you to the game page',
+                onAutoClose: () => {
+                  router.push(`/${rpslsInstance.options.address}`)
+                }
+              })
+              console.log(rpslsInstance.options.address);
           }
-            
             
           console.log("here");
           
         } catch (error) {
           toast(error.message)
+          console.log(error);
           
         }
   }

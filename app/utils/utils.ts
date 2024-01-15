@@ -13,7 +13,9 @@ export const resetGame = () => {
     localStorage.removeItem('saltExpiration');                                          
 };
 
-export const saveGame = (salt:string, move:string, contractAddress:string)=> {          
+export const saveGame = (salt:string, move:string, contractAddress:string)=> {         
+    console.log('saveGame', salt, move, contractAddress);
+     
     localStorage.setItem('salt', salt);
     localStorage.setItem('move', move);
     localStorage.setItem('contractAddress', contractAddress)

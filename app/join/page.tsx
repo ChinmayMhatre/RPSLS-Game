@@ -11,10 +11,12 @@ import z from 'zod'
 import RPSLS from '../../contracts/RPS.json'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import detectEthereumProvider from '@metamask/detect-provider'
+import { moveMap } from '../utils/utils'
 
 const joinGameSchema = z.object({
   contractAddress: z.string().min(42).max(42),
-  move: z.enum(['null','rock', 'paper', 'scissors', 'lizard', 'spock']),
+  move: z.enum(['null', 'rock', 'paper', 'scissors', 'lizard', 'spock']),
 })
 
 const Page = () => {
@@ -28,8 +30,30 @@ const Page = () => {
     },
   })
 
-  const joinGame = async () => {
+  const joinGame = async (data: z.infer<typeof joinGameSchema>) => {
+    const provider: any = await detectEthereumProvider();
 
+    try {
+      await provider?.request({ method: 'eth_requestAccounts' });
+      const web3 = new Web3((window as any)?.ethereum);
+      const accounts = await web3.eth.getAccounts();
+      const contract = new web3.eth.Contract(RPSLS.abi, data.contractAddress);
+      const stake:any = await contract.methods.stake().call();
+      const lastAction: any = await contract.methods.lastAction().call();
+      if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + 300000)) {
+        toast.error('Game has timed out')
+        return;
+      }
+      const moveValue:any = moveMap[data.move as keyof typeof moveMap];
+      await contract.methods.play(moveValue).send({ from: accounts[0], value: stake });
+      toast.success('Move played successfully', {
+        onAutoClose: () => {
+          router.push('/' + data.contractAddress)
+        }
+      })
+    } catch (error) {
+      toast.error('Something went wrong')
+    }
   }
 
   const onSubmit = async (values: z.infer<typeof joinGameSchema>) => {
@@ -43,21 +67,20 @@ const Page = () => {
       }
       const contract = new web3.eth.Contract(RPSLS.abi, values.contractAddress);
       const c2 = await contract.methods.c2().call();
-      const j2:any = await contract.methods.j2().call();
-      if (j2 != accounts[0]){
+      const j2: any = await contract.methods.j2().call();
+      if (j2 != accounts[0]) {
         toast.error('You do not have access to this game!')
         return
       }
-      console.log(Number(c2));
-      if (Number(c2) != 0 ){
-        toast.error('Move already played',{
+      if (Number(c2) != 0) {
+        toast.error('Move already played', {
           onAutoClose: () => {
-            router.push('/'+ values.contractAddress)
+            router.push('/' + values.contractAddress)
           }
         })
-      }else{
-        
+        return
       }
+      joinGame(values)
 
     } catch (error) {
       toast.error('Something went wrong')
@@ -68,26 +91,26 @@ const Page = () => {
     <div>
       <div className="md:max-w-[70%] mx-auto">
         <Form {...form}>
-            <form className='space-y-8' onSubmit={form.handleSubmit(onSubmit)}>
-              <FormField control={form.control} name="contractAddress"
+          <form className='space-y-8' onSubmit={form.handleSubmit(onSubmit)}>
+            <FormField control={form.control} name="contractAddress"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Contract address</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder='Enter the address' />
                   </FormControl>
-                  <FormMessage/>
+                  <FormMessage />
                 </FormItem>
               )}
-              />
-              <FormField control={form.control} name="move"
+            />
+            <FormField control={form.control} name="move"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Move</FormLabel>
                   <FormControl>
                     <Select {...field}>
                       <SelectTrigger>
-                          <SelectValue placeholder='select a move'/>
+                        <SelectValue placeholder='select a move' />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value='rock'>Rock</SelectItem>
@@ -99,12 +122,12 @@ const Page = () => {
                     </Select>
 
                   </FormControl>
-                  <FormMessage/>
+                  <FormMessage />
                 </FormItem>
               )}
-              />
-              <Button type='submit' className='w-full'>Join Game</Button>
-            </form>
+            />
+            <Button type='submit' className='w-full'>Join Game</Button>
+          </form>
         </Form>
       </div>
     </div>
