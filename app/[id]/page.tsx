@@ -26,7 +26,6 @@ const Page = ({ params }: { params: { id: string } }) => {
 
 
   const checkPlayer2Move = async (contract: any) => {
-    // const isOver = BigInt(Date.now()) > BigInt(parseInt(lastAction) + 60000)
     const interval = setInterval(async () => {
       try {
         const [lastAction, player2Move] = await Promise.all([
@@ -34,14 +33,16 @@ const Page = ({ params }: { params: { id: string } }) => {
           contract.methods.c2().call()
         ]);
         if (Number(player2Move) !== 0) {
-          setPlayer2Played(true)
           setMessage('Player 2 has played, you can reveal your move')
+          setPlayer2Played(true)
           clearInterval(interval);
+          return
         }
         else if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + timeout)) {
           setAllowUserTimeout(true)
           setMessage('Player 2 has not played in the last 5 minutes, you can reclaim your funds')
           clearInterval(interval);
+          return
         }
         setMessage('Waiting for player 2 to play...')
       } catch (error) {
@@ -55,8 +56,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     try {
       await provider.request({ method: 'eth_requestAccounts' });
       const accounts = await web3.eth.getAccounts();
-      const rpslsGame = new web3.eth.Contract(RPSLS.abi, params.id);
-      await rpslsGame.methods.j2Timeout().send({ from: accounts[0] });
+      await gameContract.methods.j2Timeout().send({ from: accounts[0] });
       toast.success('Funds recovered successfully', {
         description: 'redirecting you to home page',
         onAutoClose: () => {
@@ -94,13 +94,8 @@ const Page = ({ params }: { params: { id: string } }) => {
       } else {
         const contract = new web3.eth.Contract(RPSLS.abi, address);
         setGameContract(contract)
-        // checkUser(contract)
-        // checkGameData(contract)
-        // checkStatus(contract)
-        // checkPlayer2Move(contract)
       }
     } catch (error) {
-      // alert('This is not a contract address');
       toast.message('This is not a valid contract address', {
         description: 'redirecting you to home page',
         onAutoClose(toast) {
@@ -125,7 +120,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     try {
       const isUser = await checkUser(gameContract)
       if (!isUser) return
-      const gameDataPresent = await checkGameData(gameContract)
+      const gameDataPresent = await checkGameData()
       if (!gameDataPresent) return
       const stake = checkStake(gameContract)
       if (!stake) return
@@ -145,7 +140,6 @@ const Page = ({ params }: { params: { id: string } }) => {
 
   const checkUser = async (contract: any) => {
     try {
-      const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
       const owner = await contract.methods.j1().call();
       if (accounts[0] === owner) {
@@ -153,7 +147,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       } else {
         toast.message('You do not have access to the game', {
           description: 'redirecting you to home page',
-          onAutoClose(toast) {
+          onAutoClose() {
             router.push('/')
           },
         })
@@ -173,8 +167,7 @@ const Page = ({ params }: { params: { id: string } }) => {
 
   }
 
-  //checkGameData take the data from local storage and check if the game is over
-  const checkGameData = async (contract: any) => {
+  const checkGameData = async () => {
     const gameData = getGameState()
     if (!gameData.contractAddress || !gameData.move || !gameData.salt) {
       toast.message('Game Data missing!', {
@@ -206,7 +199,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     if (Number(stake) === 0) {
       toast.message('Game over stake has been redeemed', {
         description: 'redirecting you to home page',
-        onAutoClose(toast) {
+        onAutoClose() {
           router.push('/')
         },
       })
@@ -221,12 +214,10 @@ const Page = ({ params }: { params: { id: string } }) => {
       await provider.request({ method: 'eth_requestAccounts' });
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
-      console.log(accounts);
       const moveValue = moveMap[move]
-      await gameContract.methods.solve(moveValue, salt).send({ from: accounts[0] })
-
-      const player2Move = await gameContract.methods.j2().call()
-
+  
+      await gameContract.methods.solve(Number(moveValue),salt).send({ from: accounts[0] })      
+      const player2Move = await gameContract.methods.c2().call()
       if (moveValue === player2Move) {
         toast.message('Have Ended in a tie', {
           onAutoClose(toast) {
@@ -236,6 +227,7 @@ const Page = ({ params }: { params: { id: string } }) => {
         })
       }
       const winner = await gameContract.methods.win(moveValue, player2Move).call()
+      console.log(winner);
       if (winner) {
         toast.message('Congratulations! You have won', {
           onAutoClose(toast) {
@@ -254,6 +246,8 @@ const Page = ({ params }: { params: { id: string } }) => {
 
     } catch (error: any) {
       toast.message(error.message)
+      console.log(error);
+      
     }
   }
 

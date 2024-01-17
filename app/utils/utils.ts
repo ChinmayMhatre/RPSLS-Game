@@ -9,13 +9,10 @@ export const moveMap = {
 export const resetGame = () => {
     localStorage.removeItem('contractAddress')
     localStorage.removeItem('move');
-    localStorage.removeItem('salt');
-    localStorage.removeItem('saltExpiration');                                          
+    localStorage.removeItem('salt');                                    
 };
 
-export const saveGame = (salt:string, move:string, contractAddress:string)=> {         
-    console.log('saveGame', salt, move, contractAddress);
-     
+export const saveGame = (salt:string, move:string, contractAddress:string)=> {  
     localStorage.setItem('salt', salt);
     localStorage.setItem('move', move);
     localStorage.setItem('contractAddress', contractAddress)

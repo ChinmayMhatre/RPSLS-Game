@@ -1,17 +1,17 @@
 "use client"
-import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { zodResolver } from '@hookform/resolvers/zod'
 import React from 'react'
-import { useForm } from 'react-hook-form'
 import Web3 from 'web3'
 import z from 'zod'
-import RPSLS from '../../contracts/RPS.json'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import detectEthereumProvider from '@metamask/detect-provider'
+import { useRouter } from 'next/navigation'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import RPSLS from '../../contracts/RPS.json'
 import { moveMap } from '../utils/utils'
 
 const joinGameSchema = z.object({
@@ -37,18 +37,20 @@ const Page = () => {
       await provider?.request({ method: 'eth_requestAccounts' });
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
-      const contract = new web3.eth.Contract(RPSLS.abi, data.contractAddress);
-      const stake:any = await contract.methods.stake().call();
-      const lastAction: any = await contract.methods.lastAction().call();
+      const contract: any = new web3.eth.Contract(RPSLS.abi, data.contractAddress);
+      const [stake, lastAction]: any = await Promise.all([
+        contract.methods.stake().call(),
+        contract.methods.lastAction().call()
+      ]);
       if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + 300000)) {
         toast.error('Game has timed out')
         return;
       }
-      const moveValue:any = moveMap[data.move as keyof typeof moveMap];
+      const moveValue: any = moveMap[data.move as keyof typeof moveMap];
       await contract.methods.play(moveValue).send({ from: accounts[0], value: stake });
       toast.success('Move played successfully', {
         onAutoClose: () => {
-          router.push('/' + data.contractAddress)
+          router.push('/join/' + data.contractAddress)
         }
       })
     } catch (error) {
@@ -66,8 +68,9 @@ const Page = () => {
         return;
       }
       const contract = new web3.eth.Contract(RPSLS.abi, values.contractAddress);
-      const c2 = await contract.methods.c2().call();
-      const j2: any = await contract.methods.j2().call();
+      const c2:number = await contract.methods.c2().call();
+      const j2: string = await contract.methods.j2().call();
+
       if (j2 != accounts[0]) {
         toast.error('You do not have access to this game!')
         return
@@ -75,7 +78,7 @@ const Page = () => {
       if (Number(c2) != 0) {
         toast.error('Move already played', {
           onAutoClose: () => {
-            router.push('/' + values.contractAddress)
+            router.push('/join/' + values.contractAddress)
           }
         })
         return
@@ -108,7 +111,7 @@ const Page = () => {
                 <FormItem>
                   <FormLabel>Move</FormLabel>
                   <FormControl>
-                    <Select {...field}>
+                    <Select {...field} onValueChange={field.onChange} defaultValue={field.value}>
                       <SelectTrigger>
                         <SelectValue placeholder='select a move' />
                       </SelectTrigger>
