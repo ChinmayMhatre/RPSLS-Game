@@ -43,6 +43,13 @@ const Page = () => {
       setDisable(false)
       return;
     }
+
+    if(Number(values.stake) <= 0) {
+      toast.error('Stake amount should be greater than 0')
+      setDisable(false)
+      return;
+    }
+
     try {
       await provider.request({
         method: 'eth_requestAccounts',
