@@ -36,7 +36,6 @@ const Page = () => {
 
   const onSubmit = async (values: z.infer<typeof createGameSchema>) => {
     setDisable(true)
-    console.log(values)
     resetGame()
     const provider:any = await detectEthereumProvider();
     if (!provider) {

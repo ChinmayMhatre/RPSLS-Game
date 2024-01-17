@@ -165,7 +165,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       toast.error('Something went wrong',
         {
           description: 'redirecting you to home page',
-          onAutoClose(toast) {
+          onAutoClose() {
             router.push('/')
           },
         }
@@ -190,7 +190,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     if (gameData.contractAddress !== params.id) {
       toast.message('Game Data stored does not match the contract address', {
         description: 'redirecting you to home page',
-        onAutoClose(toast) {
+        onAutoClose() {
           router.push('/')
         },
       })
@@ -225,13 +225,13 @@ const Page = ({ params }: { params: { id: string } }) => {
       const accounts = await web3.eth.getAccounts();
       const moveValue = moveMap[move as keyof typeof moveMap];
       const loading = toast.loading('Checking winner...', {
-        duration: 1000000
+        duration: 100000
       })
       await gameContract.methods.solve(Number(moveValue),salt).send({ from: accounts[0] })      
       const player2Move = await gameContract.methods.c2().call()
       
       if (Number(moveValue) === Number(player2Move)) {
-        toast.message('Have Ended in a tie', {
+        toast.message('Game has ended in a tie', {
           onAutoClose() {
             toast.dismiss(loading)
             resetGame()
