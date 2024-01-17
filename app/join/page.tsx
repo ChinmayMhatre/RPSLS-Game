@@ -45,6 +45,7 @@ const Page = () => {
       ]);
       if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + 300)) {
         toast.error('Game has timed out')
+        setDisable(false)
         return;
       }
       const moveValue: any = moveMap[data.move as keyof typeof moveMap];
@@ -74,6 +75,7 @@ const Page = () => {
       const code = await web3.eth.getCode(values.contractAddress);
       if (code == '0x') {
         toast.error('Contract does not exist')
+        setDisable(false)
         return;
       }
       const contract = new web3.eth.Contract(RPSLS.abi, values.contractAddress);
@@ -82,6 +84,7 @@ const Page = () => {
 
       if (j2 != accounts[0]) {
         toast.error('You do not have access to this game!')
+        setDisable(false)
         return
       }
       if (Number(c2) != 0) {
