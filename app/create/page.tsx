@@ -22,6 +22,7 @@ const createGameSchema = z.object({
 })
 
 const Page = () => {
+  let loading:any
   const router = useRouter()
   const [disable, setDisable] = useState(false)
 
@@ -79,7 +80,7 @@ const Page = () => {
         const hashedMove: any = await generateMoveHash(moveValue, generatedSalt);
 
         const RPSLS: any = new web3.eth.Contract(RPSLSContract.abi);
-        const loading = toast.loading('Creating game...',
+          loading = toast.loading('Creating game...',
           {
             duration: 1000000
           }
@@ -99,6 +100,7 @@ const Page = () => {
         })
       }
     } catch (error) {
+      toast.dismiss(loading)
       toast((error as Error).message);
       console.log(error);
       setDisable(false)

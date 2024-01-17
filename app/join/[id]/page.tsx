@@ -14,6 +14,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   const [message, setMessage] = useState('loading...')
   const [disabled, setDisabled] = useState(false)
   const web3 = new Web3((window as any)?.ethereum);
+  let loading:any
 
   const fetchContract = useCallback(async () => {
     const web3 = new Web3((window as any)?.ethereum);
@@ -111,7 +112,7 @@ const Page = ({ params }: { params: { id: string } }) => {
             await provider.request({ method: 'eth_requestAccounts' });
             const accounts = await web3.eth.getAccounts();
             const rpslsGame = new web3.eth.Contract(RPSLS.abi, params.id);
-            const loading = toast.loading('Reclaiming funds...')
+            loading = toast.loading('Reclaiming funds...')
             await rpslsGame.methods.j1Timeout().send({ from: accounts[0] });
             toast.success('Funds recovered successfully', {
               description: 'redirecting you to home page',
@@ -122,6 +123,7 @@ const Page = ({ params }: { params: { id: string } }) => {
             })
         } catch (error) {
           toast.error('Something went wrong')
+          toast.dismiss(loading)
           setDisabled(false)
         }
 }
@@ -133,7 +135,7 @@ const Page = ({ params }: { params: { id: string } }) => {
         </h1>
         {
           redeem && (
-            <Button onClick={reclaimFunds}>
+            <Button disabled={disabled} onClick={reclaimFunds}>
               Reclaim funds
             </Button>
           )

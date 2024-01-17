@@ -21,6 +21,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   const [move, setMove] = useState<any>(null)
   const [message, setMessage] = useState('loading...')
   const [disabled, setDisabled] = useState(false)
+  let loading:any
 
   const [player2Played, setPlayer2Played] = useState(false)
   const router = useRouter()
@@ -59,7 +60,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       setDisabled(true)
       await provider.request({ method: 'eth_requestAccounts' });
       const accounts = await web3.eth.getAccounts();
-      const loading = toast.loading('Reclaiming funds...', {
+      loading = toast.loading('Reclaiming funds...', {
         duration: 1000000
       })
       await gameContract.methods.j2Timeout().send({ from: accounts[0] });
@@ -72,6 +73,7 @@ const Page = ({ params }: { params: { id: string } }) => {
         }
       })
     } catch (error) {
+      toast.dismiss(loading)
       toast.error('Something went wrong')
       setDisabled(false)
     }
@@ -224,7 +226,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
       const moveValue = moveMap[move as keyof typeof moveMap];
-      const loading = toast.loading('Checking winner...', {
+      loading = toast.loading('Checking winner...', {
         duration: 100000
       })
       await gameContract.methods.solve(Number(moveValue),salt).send({ from: accounts[0] })      
@@ -261,6 +263,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     } catch (error: any) {
       toast.message(error.message)
       console.log(error);
+      toast.dismiss(loading)
       setDisabled(false)
     }
   }

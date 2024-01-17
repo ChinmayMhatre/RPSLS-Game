@@ -21,6 +21,7 @@ const joinGameSchema = z.object({
 
 const Page = () => {
   const router = useRouter()
+  let loading:any
   const [disable, setDisable] = useState(false)
 
   const form = useForm<z.infer<typeof joinGameSchema>>({
@@ -49,7 +50,7 @@ const Page = () => {
         return;
       }
       const moveValue: any = moveMap[data.move as keyof typeof moveMap];
-      const loading = toast.loading('joining game...',
+      loading = toast.loading('joining game...',
           {
             duration: 1000000
           }
@@ -62,6 +63,7 @@ const Page = () => {
         }
       })
     } catch (error) {
+      toast.dismiss(loading)
       toast.error('Something went wrong')
       setDisable(false)
     }
