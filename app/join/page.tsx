@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import Web3 from 'web3'
 import z from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +21,7 @@ const joinGameSchema = z.object({
 
 const Page = () => {
   const router = useRouter()
+  const [disable, setDisable] = useState(false)
 
   const form = useForm<z.infer<typeof joinGameSchema>>({
     resolver: zodResolver(joinGameSchema),
@@ -47,18 +48,26 @@ const Page = () => {
         return;
       }
       const moveValue: any = moveMap[data.move as keyof typeof moveMap];
+      const loading = toast.loading('joining game...',
+          {
+            duration: 1000000
+          }
+        )
       await contract.methods.play(moveValue).send({ from: accounts[0], value: stake });
       toast.success('Move played successfully', {
         onAutoClose: () => {
+          toast.dismiss(loading)
           router.push('/join/' + data.contractAddress)
         }
       })
     } catch (error) {
       toast.error('Something went wrong')
+      setDisable(false)
     }
   }
 
   const onSubmit = async (values: z.infer<typeof joinGameSchema>) => {
+    setDisable(true)
     const web3 = new Web3((window as any)?.ethereum);
     try {
       const accounts = await web3.eth.getAccounts();
@@ -87,6 +96,7 @@ const Page = () => {
 
     } catch (error) {
       toast.error('Something went wrong')
+      setDisable(false)
     }
   }
 
@@ -129,7 +139,7 @@ const Page = () => {
                 </FormItem>
               )}
             />
-            <Button type='submit' className='w-full'>Join Game</Button>
+            <Button disabled={disable} type='submit' className='w-full'>Join Game</Button>
           </form>
         </Form>
       </div>

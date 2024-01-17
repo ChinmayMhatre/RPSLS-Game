@@ -6,6 +6,13 @@ export const moveMap = {
     'lizard': 5
 };
 
+export const generateSaltUint256 = (): string => {
+    const randomValues = new Uint32Array(8);
+    window.crypto.getRandomValues(randomValues);
+    const saltUint256 = randomValues.reduce((acc, value) => acc + value.toString(16).padStart(8, '0'), '');
+    return BigInt(`0x${saltUint256}`).toString();
+  };    
+
 export const resetGame = () => {
     localStorage.removeItem('contractAddress')
     localStorage.removeItem('move');

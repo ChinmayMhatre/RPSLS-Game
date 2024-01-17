@@ -13,16 +13,17 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import Hasher from '../../contracts/Hasher.json'
 import RPSLSContract from '../../contracts/RPS.json'
-import { moveMap, resetGame, saveGame } from '../utils/utils'
+import { generateSaltUint256, moveMap, resetGame, saveGame } from '../utils/utils'
 
 const createGameSchema = z.object({
   stake: z.string(),
-  player2Address: z.string(),
+  player2Address: z.string().min(42).max(42),
   move: z.enum(['rock', 'paper', 'scissors', 'lizard', 'spock']),
 })
 
 const Page = () => {
   const router = useRouter()
+  const [disable, setDisable] = useState(false)
 
   const form = useForm<z.infer<typeof createGameSchema>>({
     resolver: zodResolver(createGameSchema),
@@ -34,11 +35,13 @@ const Page = () => {
   })
 
   const onSubmit = async (values: z.infer<typeof createGameSchema>) => {
+    setDisable(true)
     console.log(values)
     resetGame()
     const provider:any = await detectEthereumProvider();
     if (!provider) {
       toast.error('Please install metamask')
+      setDisable(false)
       return;
     }
     try {
@@ -58,27 +61,6 @@ const Page = () => {
       }
       if (chain === BigInt(5)) {
         const hasherContractAddress = '0x8013F929F90B929ACB0E30fcE200af4Bc17F9634';
-
-        const generateSaltUint256 = (): string => {
-          const randomValues = new Uint32Array(8);
-          window.crypto.getRandomValues(randomValues);
-          const saltUint256 = randomValues.reduce((acc, value) => acc + value.toString(16).padStart(8, '0'), '');
-          return BigInt(`0x${saltUint256}`).toString();
-        };
-
-        //   const generateSaltUint256 = ()=>{
-        //     const byteCount = 32; // 256 bits
-        //     const randomBytes = new Uint8Array(byteCount);
-        //     window.crypto.getRandomValues(randomBytes);
-
-        //     // Convert the byte array to a big integer string
-        //     let salt = '';
-        //     for (let i = 0; i < randomBytes.length; i++) {
-        //         salt += ('00' + randomBytes[i].toString(16)).slice(-2);
-        //     }
-        //     /* global BigInt */
-        //     return BigInt(`0x${salt}`).toString();
-        // }            
 
         const generatedSalt = generateSaltUint256();
 
@@ -113,7 +95,7 @@ const Page = () => {
     } catch (error) {
       toast((error as Error).message);
       console.log(error);
-
+      setDisable(false)
     }
   }
 
@@ -167,7 +149,7 @@ const Page = () => {
                 </FormItem>
               )}
             />
-            <Button type='submit'>Create Game</Button>
+            <Button disabled={disable} type='submit'>Create Game</Button>
           </form>
         </Form>
       </div>

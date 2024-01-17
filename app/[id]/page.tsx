@@ -20,6 +20,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   const [salt, setSalt] = useState<any>(null)
   const [move, setMove] = useState<any>(null)
   const [message, setMessage] = useState('loading...')
+  const [disabled, setDisabled] = useState(false)
 
   const [player2Played, setPlayer2Played] = useState(false)
   const router = useRouter()
@@ -55,18 +56,24 @@ const Page = ({ params }: { params: { id: string } }) => {
 
   const reclaimFunds = async () => {
     try {
+      setDisabled(true)
       await provider.request({ method: 'eth_requestAccounts' });
       const accounts = await web3.eth.getAccounts();
+      const loading = toast.loading('Reclaiming funds...', {
+        duration: 1000000
+      })
       await gameContract.methods.j2Timeout().send({ from: accounts[0] });
       toast.success('Funds recovered successfully', {
         description: 'redirecting you to home page',
         onAutoClose: () => {
+          toast.dismiss(loading)
           resetGame()
           router.push('/')
         }
       })
     } catch (error) {
       toast.error('Something went wrong')
+      setDisabled(false)
     }
   }
 
@@ -212,23 +219,28 @@ const Page = ({ params }: { params: { id: string } }) => {
 
   const revealMove = async () => {
     try {
+      setDisabled(true)
       await provider.request({ method: 'eth_requestAccounts' });
       const web3 = new Web3((window as any)?.ethereum);
       const accounts = await web3.eth.getAccounts();
-      const moveValue = moveMap[move]
-  
+      const moveValue = moveMap[move as keyof typeof moveMap];
+      const loading = toast.loading('Checking winner...', {
+        duration: 1000000
+      })
       await gameContract.methods.solve(Number(moveValue),salt).send({ from: accounts[0] })      
       const player2Move = await gameContract.methods.c2().call()
       if (moveValue === player2Move) {
         toast.message('Have Ended in a tie', {
-          onAutoClose(toast) {
+          onAutoClose() {
+            toast.dismiss(loading)
             resetGame()
             router.push('/')
           },
         })
+        return
       }
       const winner = await gameContract.methods.win(moveValue, player2Move).call()
-      console.log(winner);
+      toast.dismiss(loading)
       if (winner) {
         toast.message('Congratulations! You have won', {
           onAutoClose(toast) {
@@ -248,7 +260,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     } catch (error: any) {
       toast.message(error.message)
       console.log(error);
-      
+      setDisabled(false)
     }
   }
 
@@ -261,14 +273,14 @@ const Page = ({ params }: { params: { id: string } }) => {
       </h1>
       {
         allowUserTimeout && (
-          <Button onClick={reclaimFunds}>
+          <Button disabled={disabled} onClick={reclaimFunds}>
             Recover your funds
           </Button>
         )
       }
       {
         player2Played && (
-          <Button onClick={revealMove}>Reveal your move</Button>
+          <Button disabled={disabled} onClick={revealMove}>Reveal your move</Button>
         )
       }
     </div>
