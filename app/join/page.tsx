@@ -42,7 +42,7 @@ const Page = () => {
         contract.methods.stake().call(),
         contract.methods.lastAction().call()
       ]);
-      if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + 300000)) {
+      if (BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + 300)) {
         toast.error('Game has timed out')
         return;
       }

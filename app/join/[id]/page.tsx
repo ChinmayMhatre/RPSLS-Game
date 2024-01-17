@@ -82,14 +82,14 @@ const Page = ({ params }: { params: { id: string } }) => {
       const interval = setInterval(async () => {
       const stake = await gameContract.methods.stake().call();
       const lastAction = await gameContract.methods.lastAction().call();
-      const timeout = Math.floor(Date.now() / 1000) > Number(lastAction) + 300000
+      const timeout = Math.floor(Date.now() / 1000) > Number(lastAction) + 300
       if(timeout && Number(stake) > 0){
         setRedeem(true)
         setMessage("Game has timed out, you can claim your funds")
         clearInterval(interval)
         return
       }
-      console.log(Number(stake));
+      console.log(timeout);
       
       if(Number(stake) === 0) {
         // game over someone has claimed funds or won
@@ -102,6 +102,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       }, 5000);
 
     } catch (error) {
+      console.log(error);
       
     }
   }

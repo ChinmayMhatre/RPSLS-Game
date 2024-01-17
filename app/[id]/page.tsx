@@ -15,7 +15,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   const [gameContract, setGameContract] = useState<any>(null)
   const [allowUserTimeout, setAllowUserTimeout] = useState<any>(false)
   const web3 = new Web3((window as any)?.ethereum);
-  const timeout = 300000
+  const timeout = 300
 
   const [salt, setSalt] = useState<any>(null)
   const [move, setMove] = useState<any>(null)
@@ -32,6 +32,7 @@ const Page = ({ params }: { params: { id: string } }) => {
           contract.methods.lastAction().call(),
           contract.methods.c2().call()
         ]);
+        
         if (Number(player2Move) !== 0) {
           setMessage('Player 2 has played, you can reveal your move')
           setPlayer2Played(true)
@@ -77,7 +78,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     } else {
       toast.message('Please install metamask', {
         description: 'redirecting you to home page',
-        onAutoClose(toast) {
+        onAutoClose() {
           router.push('/')
         },
       })
