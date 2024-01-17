@@ -229,7 +229,8 @@ const Page = ({ params }: { params: { id: string } }) => {
       })
       await gameContract.methods.solve(Number(moveValue),salt).send({ from: accounts[0] })      
       const player2Move = await gameContract.methods.c2().call()
-      if (moveValue === player2Move) {
+      
+      if (Number(moveValue) === Number(player2Move)) {
         toast.message('Have Ended in a tie', {
           onAutoClose() {
             toast.dismiss(loading)
