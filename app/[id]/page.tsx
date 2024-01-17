@@ -34,6 +34,20 @@ const Page = ({ params }: { params: { id: string } }) => {
           contract.methods.lastAction().call(),
           contract.methods.c2().call()
         ]);
+
+        if(BigInt(Math.floor(Date.now() / 1000)) > BigInt(parseInt(lastAction) + timeout) && Number(player2Move) !== 0) {
+          toast.message('Game has timed out, you cannot play anymore',
+          {
+            description: 'redirecting you to home page',
+            onAutoClose() {
+              resetGame()
+              router.push('/')
+            },
+          }
+          )
+          clearInterval(interval);
+          return
+        }
         
         if (Number(player2Move) !== 0) {
           setMessage('Player 2 has played, you can reveal your move')
